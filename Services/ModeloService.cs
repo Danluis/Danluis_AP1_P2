@@ -15,65 +15,23 @@ public class ModeloService : IServiceResult<Modelo, int>
         DbFactory = dbFactory;
     }
 
-    // Devuelve una lista de registros que cumplan con el criterio recibido.
-    public async Task<Result<List<Modelo>>> GetList(Expression<Func<Modelo, bool>> criterio)
+    public Task<Result<List<Modelo>>> GetList(Expression<Func<Modelo, bool>> criterio)
     {
-        await using var contexto = await DbFactory.CreateDbContextAsync();
-        var lista = await contexto.Modelos.Where(criterio).ToListAsync();
-        return Result.Success(lista);
+        throw new NotImplementedException();
     }
 
-    // Busca un solo registro por su Id. Puede devolver null si no existe.
-    public async Task<Result<Modelo?>> Buscar(int id)
+    public Task<Result<Modelo?>> Buscar(int id)
     {
-        await using var contexto = await DbFactory.CreateDbContextAsync();
-        var modelo = await contexto.Modelos.FirstOrDefaultAsync(m => m.ModeloId == id);
-        return Result.Success(modelo);
+        throw new NotImplementedException();
     }
 
-    // Crea o modifica un registro, según si ya existe o no en la base.
-    public async Task<Result> Guardar(Modelo modelo)
+    public Task<Result> Guardar(Modelo modelo)
     {
-        await using var contexto = await DbFactory.CreateDbContextAsync();
-
-        var existe = await contexto.Modelos.AnyAsync(m => m.ModeloId == modelo.ModeloId);
-
-        if (existe)
-        {
-            contexto.Modelos.Update(modelo);
-        }
-        else
-        {
-            contexto.Modelos.Add(modelo);
-        }
-
-        var filasAfectadas = await contexto.SaveChangesAsync();
-
-        if (filasAfectadas > 0)
-        {
-            return Result.Success();
-        }
-        else
-        {
-            return Result.Failure(new Error("NO_GUARDADO", "No se pudo guardar el registro."));
-        }
+        throw new NotImplementedException();
     }
 
-    // Elimina un registro por su Id.
-    public async Task<Result> Eliminar(int id)
+    public Task<Result> Eliminar(int id)
     {
-        await using var contexto = await DbFactory.CreateDbContextAsync();
-
-        var modelo = await contexto.Modelos.FirstOrDefaultAsync(m => m.ModeloId == id);
-
-        if (modelo is null)
-        {
-            return Result.Failure(new Error("NO_ENCONTRADO", "Registro no encontrado."));
-        }
-
-        contexto.Modelos.Remove(modelo);
-        await contexto.SaveChangesAsync();
-
-        return Result.Success();
+        throw new NotImplementedException();
     }
 }

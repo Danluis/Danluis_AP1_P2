@@ -1,6 +1,6 @@
 ﻿using BlazorBootstrap;
 
-namespace Danluis_AP1_P2.Services;
+namespace Danluis_AP1_P2.Extensors;
 
 public static class ToastServiceExtensions
 {
