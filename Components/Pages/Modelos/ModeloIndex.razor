@@ -1,0 +1,91 @@
+﻿@page "/Modelo/Index"
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using Danluis_AP1_P2.Services
+@inject ModeloService ModeloService
+@rendermode InteractiveServer
+
+<PageTitle>Consulta de Modelo</PageTitle>
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Consulta de Modelo</h5>
+            <a href="/Modelo/create" class="btn btn-primary">
+                <span class="bi bi-plus-circle"></span> Nuevo Modelo
+            </a>
+        </div>
+
+        <div class="card-body">
+            @*labels*@
+            <div class="row mb-3">
+                @*Filtrar por*@
+                <div class="col-md-4">
+                    <label class="form-label"><span class="bi bi-funnel"></span> Filtrar por</label>
+                    <select class="form-select" @bind="criterioSeleccionado">
+                        <option value="">Elija una opción</option>
+                        <option value="id">Id</option>
+                        <option value="nombre">Nombre</option>
+                    </select>
+                </div>
+                @*Búsqueda*@
+                <div class="col-md-6">
+                    <label class="form-label">Búsqueda</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Buscar"
+                               @bind="textoBusqueda" @bind:event="oninput"
+                               @onkeyup="ManejarTecla" />
+                        <button class="btn btn-outline-secondary" @onclick="Buscar">
+                            <span class="bi bi-search"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            @*tabla*@
+            @if (lista is null)
+            {
+                <p>Cargando...</p>
+            }
+            else
+            {
+                <QuickGrid Items="@lista.AsQueryable()" Pagination="@paginacion" Class="table table-striped table-hover">
+                    <PropertyColumn Property="@(m => m.ModeloId)" Title="Id" Sortable="true" />
+                    <PropertyColumn Property="@(m => m.Nombre)" Title="Nombre" Sortable="true" />
+                    <TemplateColumn Title="Opciones">
+                        <a href="@($"/Modelo/edit/{context.ModeloId}")" class="btn btn-sm btn-outline-primary">
+                            <span class="bi bi-pencil-square"></span> Editar
+                        </a>
+                    </TemplateColumn>
+                </QuickGrid>
+
+                <Paginator State="@paginacion" />
+
+                @*conteo*@
+                <p class="text-muted">Cantidad: @lista.Count</p>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Modelo>? lista;
+    private string criterioSeleccionado = "";
+    private string textoBusqueda = "";
+    private PaginationState paginacion = new PaginationState { ItemsPerPage = 5 };
+
+    protected override async Task OnInitializedAsync()
+    {
+    }
+
+    private async Task ManejarTecla(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await Buscar();
+        }
+    }
+
+    private async Task Buscar()
+    {
+    }
+}
