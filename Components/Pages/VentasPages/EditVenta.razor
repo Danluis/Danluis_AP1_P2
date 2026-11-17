@@ -1,0 +1,155 @@
+﻿@page "/Ventas/Edit/{Id:int}"
+@using Danluis_AP1_P2.Models
+@using Danluis_AP1_P2.Services
+@using BlazorBootstrap
+@inject VentaService VentaService
+@inject ProductoService ProductoService
+@inject NavigationManager NavigationManager
+@inject ToastService ToastService
+@rendermode InteractiveServer
+
+<h3>Modificar Venta</h3>
+
+@if (venta == null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <EditForm Model="venta" OnValidSubmit="Guardar">
+        <DataAnnotationsValidator />
+
+        <div class="mb-3">
+            <label>Fecha</label>
+            <InputDate class="form-control" @bind-Value="venta.Fecha" />
+        </div>
+        <div class="mb-3">
+            <label>Observación</label>
+            <InputText class="form-control" @bind-Value="venta.Observacion" />
+        </div>
+
+        <h5>Detalle</h5>
+
+        @if (mensajeError != null)
+        {
+            <div class="alert alert-danger">@mensajeError</div>
+        }
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Precio</th>
+                    <th>Cantidad</th>
+                    <th>Subtotal</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var detalle in venta.Detalles)
+                {
+                    <tr>
+                        <td>
+                            <select class="form-select" @bind="detalle.ProductoId" @bind:after="() => ActualizarPrecio(detalle)">
+                                <option value="0">-- Seleccione --</option>
+                                @foreach (var p in productos)
+                                {
+                                    <option value="@p.ProductoId">@p.Nombre (Stock: @p.Stock)</option>
+                                }
+                            </select>
+                        </td>
+                        <td>
+                            <label class="form-control">@detalle.Precio</label>
+                        </td>
+                        <td>
+                            <input type="number" min="1" class="form-control" @bind="detalle.Cantidad" />
+                        </td>
+                        <td>
+                            @((detalle.Cantidad * detalle.Precio).ToString("0.00"))
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-danger btn-sm" @onclick="() => EliminarDetalle(detalle)">Eliminar</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <button type="button" class="btn btn-secondary mb-3" @onclick="AgregarDetalle">+ Agregar producto</button>
+
+        <h5>Total: @TotalActual.ToString("0.00")</h5>
+
+        <button type="submit" class="btn btn-success">Guardar</button>
+        <a class="btn btn-link" href="/Ventas/Index">Cancelar</a>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Venta? venta;
+    private List<Producto> productos = new List<Producto>();
+    private string? mensajeError;
+
+    private decimal TotalActual => venta?.Detalles.Sum(d => d.Cantidad * d.Precio) ?? 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var resultadoProductos = await ProductoService.GetList(p => true);
+        if (resultadoProductos.IsSuccess)
+            productos = resultadoProductos.Value!;
+
+        var resultadoVenta = await VentaService.Buscar(Id);
+        if (resultadoVenta.IsSuccess && resultadoVenta.Value != null)
+        {
+            venta = resultadoVenta.Value;
+        }
+        else
+        {
+            ToastService.Notify(new ToastMessage(ToastType.Danger, "No se encontró la venta"));
+            NavigationManager.NavigateTo("/Ventas/Index");
+        }
+    }
+
+    private void AgregarDetalle()
+    {
+        venta!.Detalles.Add(new DetalleVenta());
+    }
+
+    private void EliminarDetalle(DetalleVenta detalle)
+    {
+        venta!.Detalles.Remove(detalle);
+    }
+
+    private void ActualizarPrecio(DetalleVenta detalle)
+    {
+        var producto = productos.FirstOrDefault(p => p.ProductoId == detalle.ProductoId);
+        if (producto != null)
+            detalle.Precio = producto.Precio;
+    }
+
+    private async Task Guardar()
+    {
+        mensajeError = null;
+
+        if (venta!.Detalles.Count == 0)
+        {
+            mensajeError = "Debe agregar al menos un producto";
+            return;
+        }
+
+        var resultado = await VentaService.Guardar(venta);
+
+        if (resultado.IsSuccess)
+        {
+            ToastService.Notify(new ToastMessage(ToastType.Success, "Venta modificada correctamente"));
+            NavigationManager.NavigateTo("/Ventas/Index");
+        }
+        else
+        {
+            mensajeError = resultado.Error.Description;
+            ToastService.Notify(new ToastMessage(ToastType.Danger, mensajeError));
+        }
+    }
+}
