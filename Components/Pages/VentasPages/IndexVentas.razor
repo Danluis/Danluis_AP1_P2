@@ -1,0 +1,116 @@
+﻿@page "/Ventas/Index"
+@using Danluis_AP1_P2.Models
+@using Danluis_AP1_P2.Services
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using BlazorBootstrap
+@inject VentaService VentaService
+@inject ToastService ToastService
+@rendermode InteractiveServer
+
+<h3>Registro de Ventas de Cafe</h3>
+
+<div class="row mb-3">
+    <div class="col">
+        <label>Venta Id</label>
+        <input class="form-control" @bind="ventaIdFiltro" />
+    </div>
+    <div class="col">
+        <label>Concepto</label>
+        <input class="form-control" @bind="conceptoFiltro" />
+    </div>
+    <div class="col">
+        <label>Fecha Desde</label>
+        <input type="date" class="form-control" @bind="fechaDesde" />
+    </div>
+    <div class="col">
+        <label>Fecha Hasta</label>
+        <input type="date" class="form-control" @bind="fechaHasta" />
+    </div>
+    <div class="col d-flex align-items-end">
+        <button class="btn btn-primary me-2" @onclick="Buscar">Buscar</button>
+        <button class="btn btn-secondary" @onclick="Restablecer">Restablecer</button>
+    </div>
+</div>
+
+<a class="btn btn-success mb-3" href="/Ventas/Create">+ Nueva Venta</a>
+
+<QuickGrid Items="ventas.AsQueryable()">
+    <PropertyColumn Property="@(v => v.VentaId)" Title="Id" />
+    <PropertyColumn Property="@(v => v.Fecha)" Title="Fecha" Format="dd/MM/yyyy" />
+    <PropertyColumn Property="@(v => v.Observacion)" Title="Observación" />
+    <PropertyColumn Property="@(v => v.Total)" Title="Total" Format="0.00" />
+    <TemplateColumn Title="Opciones">
+        <a class="btn btn-sm btn-primary me-1" href="@($"/Ventas/Edit/{context.VentaId}")">Editar</a>
+        <button class="btn btn-sm btn-danger" @onclick="() => Eliminar(context.VentaId)">Eliminar</button>
+    </TemplateColumn>
+</QuickGrid>
+
+<div class="mt-3 d-flex gap-4">
+    <strong>Registros: @ventas.Count</strong>
+    <strong>Total Vendido: @ventas.Sum(v => v.Total).ToString("0.00")</strong>
+</div>
+
+@code {
+    private List<Venta> ventas = new List<Venta>();
+    private string? ventaIdFiltro;
+    private string? conceptoFiltro;
+    private DateTime? fechaDesde;
+    private DateTime? fechaHasta;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarDatos();
+    }
+
+    private async Task CargarDatos()
+    {
+        var resultado = await VentaService.GetList(v => true);
+        if (resultado.IsSuccess)
+            ventas = resultado.Value!;
+    }
+
+    private async Task Buscar()
+    {
+        var resultado = await VentaService.GetList(v => true);
+        if (!resultado.IsSuccess) return;
+
+        var lista = resultado.Value!;
+
+        if (!string.IsNullOrWhiteSpace(ventaIdFiltro) && int.TryParse(ventaIdFiltro, out var id))
+            lista = lista.Where(v => v.VentaId == id).ToList();
+
+        if (!string.IsNullOrWhiteSpace(conceptoFiltro))
+            lista = lista.Where(v => v.Observacion.Contains(conceptoFiltro, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        if (fechaDesde.HasValue)
+            lista = lista.Where(v => v.Fecha.Date >= fechaDesde.Value.Date).ToList();
+
+        if (fechaHasta.HasValue)
+            lista = lista.Where(v => v.Fecha.Date <= fechaHasta.Value.Date).ToList();
+
+        ventas = lista;
+    }
+
+    private async Task Restablecer()
+    {
+        ventaIdFiltro = null;
+        conceptoFiltro = null;
+        fechaDesde = null;
+        fechaHasta = null;
+        await CargarDatos();
+    }
+
+    private async Task Eliminar(int id)
+    {
+        var resultado = await VentaService.Eliminar(id);
+        if (resultado.IsSuccess)
+        {
+            ToastService.Notify(new ToastMessage(ToastType.Success, "Venta eliminada correctamente"));
+            await CargarDatos();
+        }
+        else
+        {
+            ToastService.Notify(new ToastMessage(ToastType.Danger, resultado.Error.Description));
+        }
+    }
+}
